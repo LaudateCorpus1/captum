@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Tuple, Union, cast
+from typing import cast, Tuple, Union
 
 import numpy as np
 import torch
@@ -8,10 +8,7 @@ from captum._utils.typing import Tensor
 from captum.attr._core.gradient_shap import GradientShap
 from captum.attr._core.integrated_gradients import IntegratedGradients
 from numpy import ndarray
-from tests.helpers.basic import (
-    BaseTest,
-    assertTensorAlmostEqual,
-)
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 from tests.helpers.basic_models import BasicLinearModel, BasicModel2
 from tests.helpers.classification_models import SoftmaxModel
 
@@ -159,8 +156,9 @@ class Test(BaseTest):
         _assert_attribution_delta(self, (inputs,), (attributions,), n_samples, delta)
 
         with self.assertRaises(AssertionError):
-            attributions, delta = gradient_shap.attribute(
+            attributions, delta = gradient_shap.attribute(  # type: ignore
                 inputs,
+                # Intentionally passing wrong type.
                 baselines=generate_baselines_returns_array,
                 target=torch.tensor(1),
                 n_samples=n_samples,

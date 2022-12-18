@@ -3,8 +3,8 @@ import collections
 from typing import List
 
 import torch
-from captum.robust import FGSM, AttackComparator
-from tests.helpers.basic import BaseTest, assertTensorAlmostEqual
+from captum.robust import AttackComparator, FGSM
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 from tests.helpers.basic_models import BasicModel, BasicModel_MultiLayer
 from torch import Tensor
 
@@ -51,7 +51,7 @@ def string_batch_perturb(inp: List[List[str]]) -> List[List[str]]:
 
 
 class SamplePerturb:
-    def __init__(self):
+    def __init__(self) -> None:
         self.count = 0
 
     def perturb(self, inp: Tensor) -> Tensor:

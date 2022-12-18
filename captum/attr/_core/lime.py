@@ -3,15 +3,15 @@ import inspect
 import math
 import typing
 import warnings
-from typing import Any, Callable, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, cast, List, Optional, Tuple, Union
 
 import torch
 from captum._utils.common import (
     _expand_additional_forward_args,
     _expand_target,
     _flatten_tensor_or_tuple,
-    _format_input,
     _format_output,
+    _format_tensor_into_tuples,
     _is_tuple,
     _reduce_list,
     _run_forward,
@@ -82,7 +82,7 @@ class LimeBase(PerturbationAttribution):
         Args:
 
 
-            forward_func (callable):  The forward function of the model or any
+            forward_func (Callable): The forward function of the model or any
                     modification of it. If a batch is provided as input for
                     attribution, it is expected that forward_func returns a scalar
                     representing the entire batch.
@@ -106,7 +106,7 @@ class LimeBase(PerturbationAttribution):
                     Note that calling fit multiple times should retrain the
                     interpretable model, each attribution call reuses
                     the same given interpretable model object.
-            similarity_func (callable): Function which takes a single sample
+            similarity_func (Callable): Function which takes a single sample
                     along with its corresponding interpretable representation
                     and returns the weight of the interpretable sample for
                     training interpretable model. Weight is generally
@@ -116,8 +116,8 @@ class LimeBase(PerturbationAttribution):
                     The expected signature of this callable is:
 
                     >>> similarity_func(
-                    >>>    original_input: Tensor or tuple of Tensors,
-                    >>>    perturbed_input: Tensor or tuple of Tensors,
+                    >>>    original_input: Tensor or tuple[Tensor, ...],
+                    >>>    perturbed_input: Tensor or tuple[Tensor, ...],
                     >>>    perturbed_interpretable_input:
                     >>>        Tensor [2D 1 x num_interp_features],
                     >>>    **kwargs: Any
@@ -131,7 +131,7 @@ class LimeBase(PerturbationAttribution):
 
                     All kwargs passed to the attribute method are
                     provided as keyword arguments (kwargs) to this callable.
-            perturb_func (callable): Function which returns a single
+            perturb_func (Callable): Function which returns a single
                     sampled input, generally a perturbation of the original
                     input, which is used to train the interpretable surrogate
                     model. Function can return samples in either
@@ -146,10 +146,10 @@ class LimeBase(PerturbationAttribution):
                     The expected signature of this callable is:
 
                     >>> perturb_func(
-                    >>>    original_input: Tensor or tuple of Tensors,
+                    >>>    original_input: Tensor or tuple[Tensor, ...],
                     >>>    **kwargs: Any
-                    >>> ) -> Tensor or tuple of Tensors or
-                    >>>    generator yielding tensor or tuple of Tensors
+                    >>> ) -> Tensor, tuple[Tensor, ...], or
+                    >>>    generator yielding tensor or tuple[Tensor, ...]
 
                     All kwargs passed to the attribute method are
                     provided as keyword arguments (kwargs) to this callable.
@@ -171,7 +171,7 @@ class LimeBase(PerturbationAttribution):
                     input. Once sampled, inputs can be converted to / from
                     the interpretable representation with either
                     to_interp_rep_transform or from_interp_rep_transform.
-            from_interp_rep_transform (callable): Function which takes a
+            from_interp_rep_transform (Callable): Function which takes a
                     single sampled interpretable representation (tensor
                     of shape 1 x num_interp_features) and returns
                     the corresponding representation in the input space
@@ -186,7 +186,7 @@ class LimeBase(PerturbationAttribution):
                     >>>    curr_sample: Tensor [2D 1 x num_interp_features]
                     >>>    original_input: Tensor or Tuple of Tensors,
                     >>>    **kwargs: Any
-                    >>> ) -> Tensor or tuple of Tensors
+                    >>> ) -> Tensor or tuple[Tensor, ...]
 
                     Returned sampled input should match the type of original_input
                     and corresponding tensor shapes.
@@ -194,7 +194,7 @@ class LimeBase(PerturbationAttribution):
                     All kwargs passed to the attribute method are
                     provided as keyword arguments (kwargs) to this callable.
 
-            to_interp_rep_transform (callable): Function which takes a
+            to_interp_rep_transform (Callable): Function which takes a
                     sample in the original input space and converts to
                     its interpretable representation (tensor
                     of shape 1 x num_interp_features).
@@ -266,7 +266,7 @@ class LimeBase(PerturbationAttribution):
 
         Args:
 
-            inputs (tensor or tuple of tensors):  Input for which LIME
+            inputs (Tensor or tuple[Tensor, ...]): Input for which LIME
                         is computed. If forward_func takes a single
                         tensor as input, a single input tensor should be provided.
                         If forward_func takes multiple tensors as input, a tuple
@@ -274,7 +274,7 @@ class LimeBase(PerturbationAttribution):
                         that for all given input tensors, dimension 0 corresponds
                         to the number of examples, and if multiple input tensors
                         are provided, the examples must be aligned appropriately.
-            target (int, tuple, tensor or list, optional):  Output indices for
+            target (int, tuple, Tensor, or list, optional): Output indices for
                         which surrogate model is trained
                         (for classification cases,
                         this is usually the target class).
@@ -300,7 +300,7 @@ class LimeBase(PerturbationAttribution):
                           target for the corresponding example.
 
                         Default: None
-            additional_forward_args (any, optional): If the forward function
+            additional_forward_args (Any, optional): If the forward function
                         requires additional arguments other than the inputs for
                         which attributions should not be computed, this argument
                         can be provided. It must be either a single additional
@@ -315,7 +315,7 @@ class LimeBase(PerturbationAttribution):
                         Note that attributions are not computed with respect
                         to these arguments.
                         Default: None
-            n_samples (int, optional):  The number of samples of the original
+            n_samples (int, optional): The number of samples of the original
                         model used to train the surrogate interpretable model.
                         Default: `50` if `n_samples` is not provided.
             perturbations_per_eval (int, optional): Allows multiple samples
@@ -342,7 +342,7 @@ class LimeBase(PerturbationAttribution):
 
         Returns:
             **interpretable model representation**:
-            - **interpretable model representation* (*Any*):
+            - **interpretable model representation** (*Any*):
                     A representation of the interpretable model trained. The return
                     type matches the return type of train_interpretable_model_func.
                     For example, this could contain coefficients of a
@@ -394,8 +394,12 @@ class LimeBase(PerturbationAttribution):
             >>> # input will be different and may have a smaller feature set, so
             >>> # an appropriate transformation function should be provided.
             >>>
-            >>> # Generating random input with size 2 x 5
-            >>> input = torch.randn(2, 5)
+            >>> def to_interp_transform(curr_sample, original_inp,
+            >>>                                      **kwargs):
+            >>>     return curr_sample
+            >>>
+            >>> # Generating random input with size 1 x 5
+            >>> input = torch.randn(1, 5)
             >>> # Defining LimeBase interpreter
             >>> lime_attr = LimeBase(net,
                                      SkLearnLinearModel("linear_model.Ridge"),
@@ -403,7 +407,7 @@ class LimeBase(PerturbationAttribution):
                                      perturb_func=perturb_func,
                                      perturb_interpretable_space=False,
                                      from_interp_rep_transform=None,
-                                     to_interp_rep_transform=lambda x: x)
+                                     to_interp_rep_transform=to_interp_transform)
             >>> # Computes interpretable model, returning coefficients of linear
             >>> # model.
             >>> attr_coefs = lime_attr.attribute(input, target=1, kernel_width=1.1)
@@ -508,17 +512,17 @@ class LimeBase(PerturbationAttribution):
             if show_progress:
                 attr_progress.close()
 
-            combined_interp_inps = torch.cat(interpretable_inps).double()
+            combined_interp_inps = torch.cat(interpretable_inps).float()
             combined_outputs = (
                 torch.cat(outputs)
                 if len(outputs[0].shape) > 0
                 else torch.stack(outputs)
-            ).double()
+            ).float()
             combined_sim = (
                 torch.cat(similarities)
                 if len(similarities[0].shape) > 0
                 else torch.stack(similarities)
-            ).double()
+            ).float()
             dataset = TensorDataset(
                 combined_interp_inps, combined_outputs, combined_sim
             )
@@ -565,7 +569,7 @@ def default_from_interp_rep_transform(curr_sample, original_inputs, **kwargs):
     ), "Must provide feature_mask to use default interpretable representation transform"
     assert (
         "baselines" in kwargs
-    ), "Must provide baselines to use default interpretable representation transfrom"
+    ), "Must provide baselines to use default interpretable representation transform"
     feature_mask = kwargs["feature_mask"]
     if isinstance(feature_mask, Tensor):
         binary_mask = curr_sample[0][feature_mask].bool()
@@ -599,7 +603,7 @@ def get_exp_kernel_similarity_function(
 
     Args:
 
-        distance_mode (str, optional):  Distance mode can be either "cosine" or
+        distance_mode (str, optional): Distance mode can be either "cosine" or
                     "euclidean" corresponding to either cosine distance
                     or Euclidean distance respectively. Distance is computed
                     by flattening the original inputs and perturbed inputs
@@ -628,7 +632,7 @@ def get_exp_kernel_similarity_function(
             distance = torch.norm(flattened_original_inp - flattened_perturbed_inp)
         else:
             raise ValueError("distance_mode must be either cosine or euclidean.")
-        return math.exp(-1 * (distance ** 2) / (2 * (kernel_width ** 2)))
+        return math.exp(-1 * (distance**2) / (2 * (kernel_width**2)))
 
     return default_exp_kernel
 
@@ -652,7 +656,7 @@ def construct_feature_mask(feature_mask, formatted_inputs):
             formatted_inputs
         )
     else:
-        feature_mask = _format_input(feature_mask)
+        feature_mask = _format_tensor_into_tuples(feature_mask)
         min_interp_features = int(
             min(
                 torch.min(single_mask).item()
@@ -728,9 +732,9 @@ class Lime(LimeBase):
         Args:
 
 
-            forward_func (callable):  The forward function of the model or any
+            forward_func (Callable): The forward function of the model or any
                     modification of it
-            interpretable_model (optional, Model): Model object to train
+            interpretable_model (Model, optional): Model object to train
                     interpretable model.
 
                     This argument is optional and defaults to SkLearnLasso(alpha=0.01),
@@ -756,14 +760,14 @@ class Lime(LimeBase):
                     Note that calling fit multiple times should retrain the
                     interpretable model, each attribution call reuses
                     the same given interpretable model object.
-            similarity_func (optional, callable): Function which takes a single sample
+            similarity_func (Callable, optional): Function which takes a single sample
                     along with its corresponding interpretable representation
                     and returns the weight of the interpretable sample for
                     training the interpretable model.
                     This is often referred to as a similarity kernel.
 
                     This argument is optional and defaults to a function which
-                    applies an exponential kernel to the consine distance between
+                    applies an exponential kernel to the cosine distance between
                     the original input and perturbed input, with a kernel width
                     of 1.0.
 
@@ -776,8 +780,8 @@ class Lime(LimeBase):
                     The expected signature of this callable is:
 
                     >>> def similarity_func(
-                    >>>    original_input: Tensor or tuple of Tensors,
-                    >>>    perturbed_input: Tensor or tuple of Tensors,
+                    >>>    original_input: Tensor or tuple[Tensor, ...],
+                    >>>    perturbed_input: Tensor or tuple[Tensor, ...],
                     >>>    perturbed_interpretable_input:
                     >>>        Tensor [2D 1 x num_interp_features],
                     >>>    **kwargs: Any
@@ -789,7 +793,7 @@ class Lime(LimeBase):
 
                     kwargs includes baselines, feature_mask, num_interp_features
                     (integer, determined from feature mask).
-            perturb_func (optional, callable): Function which returns a single
+            perturb_func (Callable, optional): Function which returns a single
                     sampled input, which is a binary vector of length
                     num_interp_features, or a generator of such tensors.
 
@@ -801,7 +805,7 @@ class Lime(LimeBase):
                     following expected signature:
 
                     >>> perturb_func(
-                    >>>    original_input: Tensor or tuple of Tensors,
+                    >>>    original_input: Tensor or tuple[Tensor, ...],
                     >>>    **kwargs: Any
                     >>> ) -> Tensor [Binary 2D Tensor 1 x num_interp_features]
                     >>>  or generator yielding such tensors
@@ -875,7 +879,7 @@ class Lime(LimeBase):
 
         Args:
 
-            inputs (tensor or tuple of tensors):  Input for which LIME
+            inputs (Tensor or tuple[Tensor, ...]): Input for which LIME
                         is computed. If forward_func takes a single
                         tensor as input, a single input tensor should be provided.
                         If forward_func takes multiple tensors as input, a tuple
@@ -883,7 +887,7 @@ class Lime(LimeBase):
                         that for all given input tensors, dimension 0 corresponds
                         to the number of examples, and if multiple input tensors
                         are provided, the examples must be aligned appropriately.
-            baselines (scalar, tensor, tuple of scalars or tensors, optional):
+            baselines (scalar, Tensor, tuple of scalar, or Tensor, optional):
                         Baselines define reference value which replaces each
                         feature when the corresponding interpretable feature
                         is set to 0.
@@ -909,10 +913,11 @@ class Lime(LimeBase):
                           - or a scalar, corresponding to a tensor in the
                             inputs' tuple. This scalar value is broadcasted
                             for corresponding input tensor.
+
                         In the cases when `baselines` is not provided, we internally
                         use zero scalar corresponding to each input tensor.
                         Default: None
-            target (int, tuple, tensor or list, optional):  Output indices for
+            target (int, tuple, Tensor, or list, optional): Output indices for
                         which surrogate model is trained
                         (for classification cases,
                         this is usually the target class).
@@ -938,7 +943,7 @@ class Lime(LimeBase):
                           target for the corresponding example.
 
                         Default: None
-            additional_forward_args (any, optional): If the forward function
+            additional_forward_args (Any, optional): If the forward function
                         requires additional arguments other than the inputs for
                         which attributions should not be computed, this argument
                         can be provided. It must be either a single additional
@@ -955,7 +960,7 @@ class Lime(LimeBase):
                         Note that attributions are not computed with respect
                         to these arguments.
                         Default: None
-            feature_mask (tensor or tuple of tensors, optional):
+            feature_mask (Tensor or tuple[Tensor, ...], optional):
                         feature_mask defines a mask for the input, grouping
                         features which correspond to the same
                         interpretable feature. feature_mask
@@ -973,7 +978,7 @@ class Lime(LimeBase):
                         If None, then a feature mask is constructed which assigns
                         each scalar within a tensor as a separate feature.
                         Default: None
-            n_samples (int, optional):  The number of samples of the original
+            n_samples (int, optional): The number of samples of the original
                         model used to train the surrogate interpretable model.
                         Default: `50` if `n_samples` is not provided.
             perturbations_per_eval (int, optional): Allows multiple samples
@@ -1008,8 +1013,8 @@ class Lime(LimeBase):
                         Default: False
 
         Returns:
-            *tensor* or tuple of *tensors* of **attributions**:
-            - **attributions** (*tensor* or tuple of *tensors*):
+            *Tensor* or *tuple[Tensor, ...]* of **attributions**:
+            - **attributions** (*Tensor* or *tuple[Tensor, ...]*):
                         The attributions with respect to each input feature.
                         If return_input_shape = True, attributions will be
                         the same size as the provided inputs, with each value

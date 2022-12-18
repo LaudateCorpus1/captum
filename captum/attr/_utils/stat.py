@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from typing import TYPE_CHECKING, Any, Callable, List, Optional
+from typing import Any, Callable, List, Optional, TYPE_CHECKING
 
 import torch
 from torch import Tensor
@@ -223,7 +223,7 @@ class StdDev(Stat):
 
     def get(self) -> Optional[Tensor]:
         var = self.var.get()
-        return var ** 0.5 if var is not None else None
+        return var**0.5 if var is not None else None
 
 
 class GeneralAccumFn(Stat):

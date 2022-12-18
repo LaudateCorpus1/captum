@@ -2,15 +2,15 @@
 
 from __future__ import print_function
 
-from typing import List, Tuple, Union, cast
+from typing import cast, List, Tuple, Union
 
 import torch
 from captum.attr._core.layer.layer_deep_lift import LayerDeepLift, LayerDeepLiftShap
 from tests.helpers.basic import (
-    BaseTest,
     assert_delta,
     assertTensorAlmostEqual,
     assertTensorTuplesAlmostEqual,
+    BaseTest,
 )
 from tests.helpers.basic_models import (
     BasicModel_ConvNet,
@@ -25,7 +25,7 @@ from torch import Tensor
 
 class TestDeepLift(BaseTest):
     def test_relu_layer_deeplift(self) -> None:
-        model = ReLULinearModel(inplace=False)
+        model = ReLULinearModel(inplace=True)
         inputs, baselines = _create_inps_and_base_for_deeplift_neuron_layer_testing()
 
         layer_dl = LayerDeepLift(model, model.relu)
@@ -39,7 +39,7 @@ class TestDeepLift(BaseTest):
         assert_delta(self, delta)
 
     def test_relu_layer_deeplift_wo_mutliplying_by_inputs(self) -> None:
-        model = ReLULinearModel(inplace=False)
+        model = ReLULinearModel(inplace=True)
         inputs, baselines = _create_inps_and_base_for_deeplift_neuron_layer_testing()
 
         layer_dl = LayerDeepLift(model, model.relu, multiply_by_inputs=False)
@@ -83,7 +83,7 @@ class TestDeepLift(BaseTest):
         assert_delta(self, delta)
 
     def test_linear_layer_deeplift(self) -> None:
-        model = ReLULinearModel(inplace=False)
+        model = ReLULinearModel(inplace=True)
         inputs, baselines = _create_inps_and_base_for_deeplift_neuron_layer_testing()
 
         layer_dl = LayerDeepLift(model, model.l3)
@@ -103,7 +103,7 @@ class TestDeepLift(BaseTest):
         self._relu_custom_attr_func_assert(attr_method, inputs, baselines, [[2.0]])
 
     def test_inplace_maxpool_relu_with_custom_attr_func(self) -> None:
-        model = BasicModel_MaxPool_ReLU(inplace=False)
+        model = BasicModel_MaxPool_ReLU(inplace=True)
         inp = torch.tensor([[[1.0, 2.0, -4.0], [-3.0, -2.0, -1.0]]])
         dl = LayerDeepLift(model, model.maxpool)
 
@@ -116,7 +116,7 @@ class TestDeepLift(BaseTest):
         dl.attribute(inp, custom_attribution_func=custom_att_func)
 
     def test_linear_layer_deeplift_batch(self) -> None:
-        model = ReLULinearModel(inplace=False)
+        model = ReLULinearModel(inplace=True)
         _, baselines = _create_inps_and_base_for_deeplift_neuron_layer_testing()
         x1 = torch.tensor(
             [[-10.0, 1.0, -5.0], [-10.0, 1.0, -5.0], [-10.0, 1.0, -5.0]],
@@ -197,7 +197,7 @@ class TestDeepLift(BaseTest):
         assert_delta(self, delta)
 
     def test_linear_layer_deepliftshap(self) -> None:
-        model = ReLULinearModel(inplace=False)
+        model = ReLULinearModel(inplace=True)
         (
             inputs,
             baselines,

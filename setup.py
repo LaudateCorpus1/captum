@@ -67,13 +67,13 @@ DEV_REQUIRES = (
     INSIGHTS_REQUIRES
     + TEST_REQUIRES
     + [
-        "black==21.4b2",
+        "black==22.3.0",
         "flake8",
         "sphinx",
         "sphinx-autodoc-typehints",
         "sphinxcontrib-katex",
         "mypy>=0.760",
-        "usort==0.6.4",
+        "usort==1.0.2",
         "ufmt",
         "scikit-learn",
         "annoy",
@@ -160,8 +160,8 @@ if __name__ == "__main__":
             (
                 "share/jupyter/nbextensions/jupyter-captum-insights",
                 [
-                    "captum/insights/attr_vis/widget/static/extension.js",
-                    "captum/insights/attr_vis/widget/static/index.js",
+                    "captum/insights/attr_vis/frontend/widget/src/extension.js",
+                    "captum/insights/attr_vis/frontend/widget/src/index.js",
                 ],
             ),
             (

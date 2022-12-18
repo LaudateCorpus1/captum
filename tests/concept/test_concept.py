@@ -1,6 +1,6 @@
 #!/usr/bin/env python3import
 
-from typing import Iterable, cast
+from typing import cast, Iterable
 
 import torch
 from captum.concept._core.concept import Concept
@@ -14,7 +14,7 @@ class CustomIterableDataset(IterableDataset):
     An auxiliary class for iterating through an image dataset.
     """
 
-    def __init__(self, get_tensor_from_filename_func, path):
+    def __init__(self, get_tensor_from_filename_func, path) -> None:
         r"""
         Args:
 

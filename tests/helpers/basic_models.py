@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Optional, Tuple, no_type_check
+from typing import no_type_check, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -16,7 +16,7 @@ the relevant type hints.
 
 
 class BasicLinearReLULinear(nn.Module):
-    def __init__(self, in_features, out_features=5, bias=False):
+    def __init__(self, in_features, out_features=5, bias=False) -> None:
         super().__init__()
         self.fc1 = nn.Linear(in_features, out_features, bias=bias)
         self.relu1 = nn.ReLU()
@@ -30,7 +30,7 @@ class BasicLinearReLULinear(nn.Module):
 
 
 class MixedKwargsAndArgsModule(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, x, y=None):
@@ -135,7 +135,7 @@ class BasicLinearModel(nn.Module):
 
 
 class BasicLinearModel2(nn.Module):
-    def __init__(self, in_features, out_features):
+    def __init__(self, in_features, out_features) -> None:
         super().__init__()
         self.linear = nn.Linear(in_features, out_features, bias=False)
 
@@ -144,7 +144,7 @@ class BasicLinearModel2(nn.Module):
 
 
 class BasicLinearModel_Multilayer(nn.Module):
-    def __init__(self, in_features, hidden_nodes, out_features):
+    def __init__(self, in_features, hidden_nodes, out_features) -> None:
         super().__init__()
         self.linear1 = nn.Linear(in_features, hidden_nodes, bias=False)
         self.linear2 = nn.Linear(hidden_nodes, out_features, bias=False)
@@ -183,7 +183,7 @@ class LinearMaxPoolLinearModel(nn.Module):
         return self.lin2(self.pool1(self.lin1(x))[:, 0, :])
 
 
-class BasicModelWithReusableModules(nn.Module):
+class BasicModelWithReusedModules(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.lin1 = nn.Linear(3, 2)
@@ -192,6 +192,16 @@ class BasicModelWithReusableModules(nn.Module):
 
     def forward(self, inputs):
         return self.relu(self.lin2(self.relu(self.lin1(inputs))))
+
+
+class BasicModelWithReusedLinear(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.lin1 = nn.Linear(3, 3)
+        self.relu = nn.ReLU()
+
+    def forward(self, inputs):
+        return self.relu(self.lin1(self.relu(self.lin1(inputs))))
 
 
 class BasicModelWithSparseInputs(nn.Module):
@@ -423,7 +433,7 @@ class BasicModel_MultiLayer_MultiInput(nn.Module):
 
 
 class BasicModel_MultiLayer_TrueMultiInput(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.m1 = BasicModel_MultiLayer()
         self.m234 = BasicModel_MultiLayer_MultiInput()

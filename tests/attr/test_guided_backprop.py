@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 
-import copy
 import unittest
 from typing import Any, List, Tuple, Union
 
 import torch
-from captum._utils.typing import TensorOrTupleOfTensorsGeneric, TensorLikeList
+from captum._utils.typing import TensorLikeList, TensorOrTupleOfTensorsGeneric
 from captum.attr._core.guided_backprop_deconvnet import GuidedBackprop
 from captum.attr._core.neuron.neuron_guided_backprop_deconvnet import (
     NeuronGuidedBackprop,
 )
-from tests.helpers.basic import BaseTest, assertTensorAlmostEqual
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 from tests.helpers.basic_models import BasicModel_ConvNet_One_Conv
 from torch.nn import Module
 
@@ -151,8 +150,7 @@ class Test(BaseTest):
         test_input: TensorOrTupleOfTensorsGeneric,
     ):
         out = model(test_input)
-        model_copy = copy.deepcopy(model)
-        attrib = GuidedBackprop(model_copy)
+        attrib = GuidedBackprop(model)
         self.assertFalse(attrib.multiplies_by_inputs)
         neuron_attrib = NeuronGuidedBackprop(model, output_layer)
         for i in range(out.shape[1]):

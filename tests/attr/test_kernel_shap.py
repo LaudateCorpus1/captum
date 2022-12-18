@@ -9,14 +9,15 @@ import torch
 from captum._utils.typing import BaselineType, TensorOrTupleOfTensorsGeneric
 from captum.attr._core.kernel_shap import KernelShap
 from tests.helpers.basic import (
-    BaseTest,
     assertTensorAlmostEqual,
     assertTensorTuplesAlmostEqual,
+    BaseTest,
+    set_all_random_seeds,
 )
 from tests.helpers.basic_models import (
+    BasicLinearModel,
     BasicModel_MultiLayer,
     BasicModel_MultiLayer_MultiInput,
-    BasicLinearModel,
 )
 
 
@@ -386,6 +387,7 @@ class Test(BaseTest):
             )
 
             if expected_coefs is not None:
+                set_all_random_seeds(1234)
                 # Test with return_input_shape = False
                 attributions = kernel_shap.attribute(
                     test_input,

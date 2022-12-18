@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
-from typing import Any, Callable, Tuple, Union, cast
+from typing import Any, Callable, cast, Tuple, Union
 
 import torch
 from captum._utils.common import (
-    ExpansionTypes,
     _expand_additional_forward_args,
     _expand_target,
     _format_additional_forward_args,
     _format_baseline,
-    _format_input,
     _format_tensor_into_tuples,
     _run_forward,
+    ExpansionTypes,
     safe_div,
 )
 from captum._utils.typing import BaselineType, TargetType, TensorOrTupleOfTensorsGeneric
@@ -45,12 +44,12 @@ def infidelity_perturb_func_decorator(multipy_by_inputs: bool = True) -> Callabl
         r"""
         Args:
 
-            pertub_func(callable): Input perturbation function that takes inputs
+            pertub_func(Callable): Input perturbation function that takes inputs
                 and optionally baselines and returns perturbed inputs
 
         Returns:
 
-            default_perturb_func(callable): Internal default perturbation
+            default_perturb_func(Callable): Internal default perturbation
             function that computes the perturbations internally and returns
             perturbations and perturbed inputs.
 
@@ -74,8 +73,8 @@ def infidelity_perturb_func_decorator(multipy_by_inputs: bool = True) -> Callabl
                 if baselines is not None
                 else pertub_func(inputs)
             )
-            inputs_perturbed = _format_input(inputs_perturbed)
-            inputs = _format_input(inputs)
+            inputs_perturbed = _format_tensor_into_tuples(inputs_perturbed)
+            inputs = _format_tensor_into_tuples(inputs)
             baselines = _format_baseline(baselines, inputs)
             if baselines is None:
                 perturbations = tuple(
@@ -127,7 +126,7 @@ def infidelity(
     and the differences between the predictor function at its input
     and perturbed input.
     More details about the measure can be found in the following paper:
-    https://arxiv.org/pdf/1901.09392.pdf
+    https://arxiv.org/abs/1901.09392
 
     It is derived from the completeness property of well-known attribution
     algorithms and is a computationally more efficient and generalized
@@ -135,7 +134,7 @@ def infidelity(
     of the attributions and the differences of the predictor function at
     its input and fixed baseline. More details about the Sensitivity-n can
     be found here:
-    https://arxiv.org/pdf/1711.06104.pdfs
+    https://arxiv.org/abs/1711.06104
 
     The users can perturb the inputs any desired way by providing any
     perturbation function that takes the inputs (and optionally baselines)
@@ -148,10 +147,10 @@ def infidelity(
 
     Args:
 
-        forward_func (callable):
+        forward_func (Callable):
                 The forward function of the model or any modification of it.
 
-        perturb_func (callable):
+        perturb_func (Callable):
                 The perturbation function of model inputs. This function takes
                 model inputs and optionally baselines as input arguments and returns
                 either a tuple of perturbations and perturbed inputs or just
@@ -206,12 +205,13 @@ def infidelity(
                    Similar to previous case here as well we need to return only
                    perturbed inputs in case `infidelity_perturb_func_decorator`
                    decorates out `perturb_func`.
+
                 It is important to note that for performance reasons `perturb_func`
                 isn't called for each example individually but on a batch of
                 input examples that are repeated `max_examples_per_batch / batch_size`
                 times within the batch.
 
-        inputs (tensor or tuple of tensors):  Input for which
+        inputs (Tensor or tuple[Tensor, ...]): Input for which
                 attributions are computed. If forward_func takes a single
                 tensor as input, a single input tensor should be provided.
                 If forward_func takes multiple tensors as input, a tuple
@@ -221,7 +221,7 @@ def infidelity(
                 multiple input tensors are provided, the examples must
                 be aligned appropriately.
 
-        baselines (scalar, tensor, tuple of scalars or tensors, optional):
+        baselines (scalar, Tensor, tuple of scalar, or Tensor, optional):
                 Baselines define reference values which sometimes represent ablated
                 values and are used to compare with the actual inputs to compute
                 importance scores in attribution algorithms. They can be represented
@@ -250,13 +250,13 @@ def infidelity(
 
                 Default: None
 
-        attributions (tensor or tuple of tensors):
+        attributions (Tensor or tuple[Tensor, ...]):
                 Attribution scores computed based on an attribution algorithm.
                 This attribution scores can be computed using the implementations
                 provided in the `captum.attr` package. Some of those attribution
                 approaches are so called global methods, which means that
                 they factor in model inputs' multiplier, as described in:
-                https://arxiv.org/pdf/1711.06104.pdf
+                https://arxiv.org/abs/1711.06104
                 Many global attribution algorithms can be used in local modes,
                 meaning that the inputs multiplier isn't factored in the
                 attribution scores.
@@ -272,7 +272,7 @@ def infidelity(
 
                 For local attributions we can use real-valued perturbations
                 whereas for global attributions that perturbation is binary.
-                https://arxiv.org/pdf/1901.09392.pdf
+                https://arxiv.org/abs/1901.09392
 
                 If we want to compute the infidelity of global attributions we
                 can use a binary perturbation matrix that will allow us to select
@@ -292,7 +292,7 @@ def infidelity(
                 tensor as well. If inputs is provided as a tuple of tensors
                 then attributions will be tuples of tensors as well.
 
-        additional_forward_args (any, optional): If the forward function
+        additional_forward_args (Any, optional): If the forward function
                 requires additional arguments other than the inputs for
                 which attributions should not be computed, this argument
                 can be provided. It must be either a single additional
@@ -305,7 +305,7 @@ def infidelity(
                 being passed to `perturb_func` as an input argument.
 
                 Default: None
-        target (int, tuple, tensor or list, optional): Indices for selecting
+        target (int, tuple, Tensor, or list, optional): Indices for selecting
                 predictions from output(for classification cases,
                 this is usually the target class).
                 If the network returns a scalar value per example, no target
@@ -366,7 +366,7 @@ def infidelity(
                 Default: False
     Returns:
 
-        infidelities (tensor): A tensor of scalar infidelity scores per
+        infidelities (Tensor): A tensor of scalar infidelity scores per
                 input example. The first dimension is equal to the
                 number of examples in the input batch and the second
                 dimension is one.
@@ -533,7 +533,7 @@ def infidelity(
         return tuple(agg_t + t for agg_t, t in zip(agg_tensors, tensors))
 
     # perform argument formattings
-    inputs = _format_input(inputs)  # type: ignore
+    inputs = _format_tensor_into_tuples(inputs)  # type: ignore
     if baselines is not None:
         baselines = _format_baseline(baselines, cast(Tuple[Tensor, ...], inputs))
     additional_forward_args = _format_additional_forward_args(additional_forward_args)
@@ -571,7 +571,7 @@ def infidelity(
         beta = safe_div(beta_num, beta_denorm)
 
         infidelity_values = (
-            beta ** 2 * agg_tensors[0] - 2 * beta * agg_tensors[1] + agg_tensors[2]
+            beta**2 * agg_tensors[0] - 2 * beta * agg_tensors[1] + agg_tensors[2]
         )
     else:
         infidelity_values = agg_tensors[0]

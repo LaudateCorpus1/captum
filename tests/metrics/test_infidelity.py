@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import typing
-from typing import Any, Callable, List, Tuple, Union, cast
+from typing import Any, Callable, cast, List, Tuple, Union
 
 import torch
 from captum._utils.typing import BaselineType, TargetType, TensorOrTupleOfTensorsGeneric
@@ -12,10 +12,7 @@ from captum.attr import (
     Saliency,
 )
 from captum.metrics import infidelity, infidelity_perturb_func_decorator
-from tests.helpers.basic import (
-    BaseTest,
-    assertTensorAlmostEqual,
-)
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 from tests.helpers.basic_models import (
     BasicModel2,
     BasicModel4_MultiArgs,
@@ -473,7 +470,7 @@ class Test(BaseTest):
         multi_input: bool = True,
         perturb_func: Callable = _local_perturb_func,
         normalize: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Tensor:
         infid = infidelity(
             model,

@@ -1,11 +1,11 @@
 import glob
 import tempfile
 from datetime import datetime
-from typing import List, cast
+from typing import cast, List
 
 import torch
 from captum._utils.av import AV
-from tests.helpers.basic import BaseTest, assertTensorAlmostEqual
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 from tests.helpers.basic_models import BasicLinearReLULinear
 from torch.utils.data import DataLoader, Dataset
 
@@ -13,14 +13,14 @@ DEFAULT_IDENTIFIER = "default_identifier"
 
 
 class RangeDataset(Dataset):
-    def __init__(self, low, high, num_features):
+    def __init__(self, low, high, num_features) -> None:
         self.samples = (
             torch.arange(start=low, end=high, dtype=torch.float)
             .repeat(num_features, 1)
             .transpose(1, 0)
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.samples)
 
     def __getitem__(self, idx):

@@ -2,11 +2,8 @@
 import random
 
 import torch
-from captum.attr import MSE, Max, Mean, Min, StdDev, Sum, Summarizer, Var
-from tests.helpers.basic import (
-    BaseTest,
-    assertTensorAlmostEqual,
-)
+from captum.attr import Max, Mean, Min, MSE, StdDev, Sum, Summarizer, Var
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 
 
 def get_values(n=100, lo=None, hi=None, integers=False):
@@ -18,7 +15,7 @@ def get_values(n=100, lo=None, hi=None, integers=False):
 
 
 class Test(BaseTest):
-    def test_div0(self):
+    def test_div0(self) -> None:
         summarizer = Summarizer([Var(), Mean()])
         summ = summarizer.summary
         self.assertIsNone(summ)
@@ -33,7 +30,7 @@ class Test(BaseTest):
         assertTensorAlmostEqual(self, summ["mean"], 10)
         assertTensorAlmostEqual(self, summ["variance"], 0)
 
-    def test_var_defin(self):
+    def test_var_defin(self) -> None:
         """
         Variance is avg squared distance to mean. Thus it should be positive.
         This test is to ensure this is the case.
@@ -66,7 +63,7 @@ class Test(BaseTest):
             assertTensorAlmostEqual(self, var, actual_var)
             self.assertTrue((var > 0).all())
 
-    def test_multi_dim(self):
+    def test_multi_dim(self) -> None:
         x1 = torch.tensor([1.0, 2.0, 3.0, 4.0])
         x2 = torch.tensor([2.0, 1.0, 2.0, 4.0])
         x3 = torch.tensor([3.0, 3.0, 1.0, 4.0])

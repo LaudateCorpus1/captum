@@ -3,10 +3,12 @@
 import glob
 import os
 import tempfile
-from collections import OrderedDict, defaultdict
+import unittest
+from collections import defaultdict, OrderedDict
 from typing import (
     Any,
     Callable,
+    cast,
     Dict,
     Iterable,
     Iterator,
@@ -14,7 +16,6 @@ from typing import (
     Set,
     Tuple,
     Union,
-    cast,
 )
 
 import torch
@@ -25,7 +26,7 @@ from captum.concept._core.tcav import TCAV
 from captum.concept._utils.classifier import Classifier
 from captum.concept._utils.common import concepts_to_str
 from captum.concept._utils.data_iterator import dataset_to_dataloader
-from tests.helpers.basic import BaseTest, assertTensorAlmostEqual
+from tests.helpers.basic import assertTensorAlmostEqual, BaseTest
 from tests.helpers.basic_models import BasicModel_ConvNet
 from torch import Tensor
 from torch.utils.data import DataLoader, IterableDataset
@@ -1110,6 +1111,16 @@ class Test(BaseTest):
             processes=1,
         )
 
+    def test_TCAV_x_1_1_c_concept_order_changed(self) -> None:
+        self.compute_cavs_interpret(
+            [["random", "striped"], ["random", "ceo"], ["ceo", "striped"]],
+            True,
+            0.4848,
+            0.5000,
+            8.185208066890937e-09,
+            processes=1,
+        )
+
     # Non-existing concept in the experimental set ("dotted")
     def test_TCAV_x_1_1_d(self) -> None:
         self.compute_cavs_interpret(
@@ -1181,6 +1192,12 @@ class Test(BaseTest):
 
     # Testing TCAV with default classifier and experimental sets of varying lengths
     def test_exp_sets_with_diffent_lengths(self) -> None:
+        try:
+            import sklearn
+            import sklearn.linear_model
+            import sklearn.svm  # noqa: F401
+        except ImportError:
+            raise unittest.SkipTest("sklearn is not available.")
         # Create Concepts
         concepts_dict = create_concepts()
 

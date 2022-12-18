@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple, Type, cast
+from typing import Any, Callable, cast, Dict, Optional, Tuple, Type
 
 import torch
 from captum.attr._core.noise_tunnel import NoiseTunnel
@@ -45,7 +45,7 @@ class HookRemovalMode(Enum):
 class ErrorModule(Module):
     def __init__(
         self,
-    ):
+    ) -> None:
         super().__init__()
         self.relu = torch.nn.ReLU()
 
